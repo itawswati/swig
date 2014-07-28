@@ -54,7 +54,11 @@ eswig_SOURCES =	CParse/cscanner.c		\
 		Modules/modula3.cxx		\
 		Modules/module.cxx		\
 		Modules/mzscheme.cxx		\
+<<<<<<< HEAD
 		Modules/nested.cxx  \
+=======
+		Modules/objc.cxx		\
+>>>>>>> gsoc2012-objc
 		Modules/ocaml.cxx		\
 		Modules/octave.cxx		\
 		Modules/overload.cxx		\

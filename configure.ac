@@ -6,7 +6,7 @@ AC_INIT([swig],[3.0.0],[http://www.swig.org])
 
 dnl NB: When this requirement is increased to 2.60 or later, AC_PROG_SED
 dnl     definition below can be removed
-AC_PREREQ(2.58)
+AC_PREREQ(2.60)
 
 AC_CONFIG_SRCDIR([Source/Swig/swig.h])
 AC_CONFIG_AUX_DIR([Tools/config])
@@ -944,6 +944,144 @@ AC_SUBST(OCTAVE_SO)
 AC_SUBST(OCTAVE_CPPFLAGS)
 AC_SUBST(OCTAVE_CXXFLAGS)
 AC_SUBST(OCTAVE_LDFLAGS)
+
+#----------------------------------------------------------------
+# Look for Objective-C
+#----------------------------------------------------------------
+
+AC_ARG_WITH(objc, AS_HELP_STRING([--without-objc], [Disable Objective-C]), [with_objc="$withval"], [with_objc=yes])
+AC_ARG_WITH(objc-compiler, [  --with-objc-compiler=path     Set location of Objective-C compiler],[OBJCBIN="$withval"], [OBJCBIN=])
+
+# First, check for "--without-objc" or "--with-objc=no".
+if test x"${with_objc}" = xno -o x"${with_alllang}" = xno ; then 
+AC_MSG_NOTICE([Disabling Objective-C])
+OBJC=
+else
+
+# set Objective-C compiler
+if test -z "$OBJCBIN" ; then
+  AC_MSG_CHECKING(Objective-C compiler)
+  AC_PROG_OBJC()
+else
+  OBJC="$OBJCBIN"
+fi
+
+# check for include files
+AC_MSG_CHECKING(for include file Foundation/Foundation.h)
+AC_ARG_WITH(objcincl, [  --with-objcincl=path    Set location of Objective-C include directory], [OBJCINCDIR="$withval"], [OBJCINCDIR=])
+
+OBJCCFLAGS=
+
+if test -z "$OBJCINCDIR"; then
+  OBJCINCDIR="/usr/include/ /usr/local/include/"
+
+  # Add in default directory for Objective-C headers on Windows for Cygwin(TODO for now), Linux and MacOSX
+  case $host in
+  *-*-cygwin* | *-*-mingw*) OBJCINCDIR="/usr/include/GNUstep /usr/lib/GNUstep/System/Library/Headers $OBJCINCDIR"
+			    OBJCCFLAGS="`gnustep-config --objc-flags`"
+			    ;;
+  *-*-linux*) OBJCINCDIR="/usr/include/GNUstep /usr/lib/GNUstep/System/Library/Headers $OBJCINCDIR"
+	      OBJCCFLAGS="`gnustep-config --objc-flags`"
+	      ;;
+  *-*-darwin*) OBJCINCDIR="/System/Library/Frameworks/Foundation.framework/Headers $OBJCINCDIR";;
+  *);;
+  esac
+fi
+
+for d in $OBJCINCDIR ; do
+  if test -r "$d/Foundation/Foundation.h" ; then
+    AC_MSG_RESULT($d)
+    OBJCINCDIR=$d
+    OBJCINC=-I\"$d\"
+    break
+  fi
+done
+
+if test "$OBJCINC" = "" ; then
+  AC_MSG_RESULT(not found)
+fi
+
+
+# check for objc and/or GNUStep libraries
+AC_ARG_WITH(objclib,[  --with-objclib =path      Set location of Objective-C library directory],[
+	OBJCLIB="-L$withval"], [OBJCLIB=])
+AC_MSG_CHECKING(for Objective-C library)
+
+if test -z "$OBJCLIB"; then
+dirs="/usr/lib/ /usr/local/lib/ /usr/lib/GNUstep/Libraries/"
+for i in $dirs ; do
+	if test -r $i/libobjc.so.2; then
+	    AC_MSG_RESULT($i)
+	    OBJCLIB="-L$i -lobjc"
+	    break
+	fi
+done
+
+for i in $dirs ; do
+	if test -r $i/*gnustep-base*; then
+	    AC_MSG_RESULT($i)
+	    OBJCLIB="-L$i -lgnustep-base $OBJCLIB"
+	    break
+	fi
+done
+
+else
+AC_MSG_RESULT($OBJCLIB)
+fi
+
+
+# linking options
+case $host in
+*-*-darwin*) 
+        OBJCDYNAMICLINKING="-dynamiclib"
+	OBJCLIBS="-framework Foundation"
+        ;;
+*-*-linux*) 
+	OBJCDYNAMICLINKING="$OBJCLIB"
+	OBJCLIBS="`gnustep-config --objc-libs` $OBJCLIB"
+        ;;
+*-*-cygwin* | *-*-mingw*) 
+        OBJCDYNAMICLINKING="$OBJCLIB"
+        OBJCLIBS="`gnustep-config --objc-libs` $OBJCLIB"
+        ;;
+*)
+        OBJCDYNAMICLINKING=""
+	OBJCLIBS=""
+        ;;
+esac
+
+# OBJCLIBRARYPREFIX
+case $host in
+*-*-cygwin* | *-*-mingw*) OBJCLIBRARYPREFIX="";;
+*) OBJCLIBRARYPREFIX="lib";;
+esac
+
+
+# library output
+case $host in
+*-*-darwin*) 
+    OBJCSO=".dylib"
+    OBJCLDSHARED='$(CC)'
+    OBJCCXXSHARED='$(CXX)'
+    ;;
+*)
+    OBJCSO=$SO
+    OBJCLDSHARED='$(LDSHARED)'
+    OBJCCXXSHARED='$(CXXSHARED)'
+    ;;
+esac
+
+fi
+
+AC_SUBST(OBJCINC)
+AC_SUBST(OBJCDYNAMICLINKING)
+AC_SUBST(OBJCLIBS)
+AC_SUBST(OBJCLIBRARYPREFIX)
+AC_SUBST(OBJCCFLAGS)
+AC_SUBST(OBJC)
+AC_SUBST(OBJCSO)
+AC_SUBST(OBJCLDSHARED)
+AC_SUBST(OBJCCXXSHARED)
 
 #----------------------------------------------------------------
 # Look for java
@@ -2225,6 +2363,11 @@ if test -z "$MZC" || test -z "$MZDYNOBJ" ; then
 fi
 AC_SUBST(SKIP_MZSCHEME)
 
+SKIP_OBJC=
+if test -z "$OBJC" || test -z "$OBJCINC" || test -z "$OBJCLIB" ; then
+    SKIP_OBJC="1"
+fi
+AC_SUBST(SKIP_OBJC)
 
 SKIP_RUBY=
 if test -z "$RUBY" || test -z "$RUBYINCLUDE" || test -z "$RUBYLIB" ; then
@@ -2239,6 +2382,11 @@ if test -z "$PHP" || test -z "$PHPINC" ; then
 fi
 AC_SUBST(SKIP_PHP)
 
+SKIP_OBJC=
+if test -z "$OBJC"; then
+    SKIP_OBJC="1"
+fi
+AC_SUBST(SKIP_OBJC)
 
 SKIP_OCAML=
 if test -z "$OCAMLBIN" || test -z "$OCAMLINC" ; then
@@ -2394,6 +2542,7 @@ AC_CONFIG_FILES([			        \
     Examples/test-suite/guile/Makefile	        \
     Examples/test-suite/java/Makefile	        \
     Examples/test-suite/mzscheme/Makefile	\
+    Examples/test-suite/objc/Makefile	        \
     Examples/test-suite/ocaml/Makefile	        \
     Examples/test-suite/octave/Makefile	        \
     Examples/test-suite/perl5/Makefile	        \
