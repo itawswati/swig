@@ -486,9 +486,9 @@
 	      unsigned long long,
 	      float,
 	      double
-%{ return $imcall; %}
+%{   return $imcall; %}
 
-%typemap(objcout) void "$imcall;"
+%typemap(objcout) void "   $imcall;"
 
 %typemap(objcout) const bool &,         bool &,
              const char &,  			char &,
@@ -504,7 +504,7 @@
 	     	 const unsigned long long &,unsigned long long &,
 	      	 const float &, 			float &,
 	      	 const double &,  			double &
-%{ return $imcall; %}
+%{   return $imcall; %}
 
 %typemap(objcout)const bool *,              bool *,
              const char *,  			char *,
@@ -520,79 +520,79 @@
 	     	 const unsigned long long *,unsigned long long *,
 	      	 const float *, 			float *,
 	      	 const double *,  			double *
-%{ return $imcall; %}
+%{   return $imcall; %}
 
 // C strings: 
 %typemap(objcout)const char *,char * 
-%{  NSString *ret = $imcall;
+%{   NSString *ret = $imcall;
     return ret; %}
 
 %typemap(objcout) char *& 
-%{  NSString *ret = $imcall;
-    return ret; %}
+%{   NSString *ret = $imcall;
+	return ret; %}
 
 %typemap(objcout) char[ANY], char[] 
-%{  NSString *ret = $imcall;
-    return ret; %}
+%{   NSString *ret = $imcall;
+	return ret; %}
 
 // Objects returned by value: Convert the void* pointer to the ObjectiveC pointer.
-// Here, for now, we presume that the returned C++ pointers will not have to be deleted by the client directly
-// As such, we mark swigOwnCObject as NO. This has to be reviewed again.
+// Returned C++ pointers will have to be deleted by the client directly.
+// As such, we mark swigOwnCObject as YES. This has to be reviewed again.
 %typemap(objcout) SWIGTYPE
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
+	$objcclassname* ret = nil;
+	if(cPtr) {
+		ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:YES];
+	}
+	return ret; %}
 
-// Pointer objects are returned as ObjectiveC pointers
-// Here, for now, we presume that the returned C++ pointers will not have to be deleted by the client directly
-// As such, we mark swigOwnCObject as NO. This has to be reviewed again.
+// Pointer and reference objects are returned as ObjectiveC pointers
+// The returned C++ pointers will not have to be deleted by the client directly
+// As such, we mark swigOwnCObject as NO.
 %typemap(objcout) SWIGTYPE &
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
+	$objcclassname* ret = nil;
+	if(cPtr) {
+		ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO];
+	}
+	return ret; %}
 	
 %typemap(objcout) SWIGTYPE *
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
-    
+	$objcclassname* ret = nil;
+	if(cPtr) {
+	ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO];
+	}
+	return ret; %}
+
 // C function pointer
 %typemap(objcout) SWIGTYPE ((*)(ANY)) 
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
-    
+	$objcclassname* ret = nil;
+	if(cPtr) {
+		ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO];
+	}
+	return ret; %}
+
 %typemap(objcvarout) SWIGTYPE ((*)(ANY)) 
-%{ $objcclassname* $objcvarname = [[[$objcclassname alloc] initWithCptr:($imcall) swigOwnCObject:NO] autorelease]; %}
+%{ $objcclassname* $objcvarname = [[$objcclassname alloc] initWithCptr:($imcall) swigOwnCObject:NO]; %}
 
 // Pointer to a class member will be returned as id
 %typemap(objcout) SWIGTYPE (CLASS::*) 
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
+	$objcclassname* ret = nil;
+	if(cPtr) {
+		ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO];
+	}
+	return ret; %}
 
 %typemap(objcout) SWIGTYPE *const& 
 %{   void* cPtr = $imcall;
-     $objcclassname* ret = nil;
-     if(cPtr) {
-        ret = [[[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO] autorelease];
-     }
-    return ret; %}
+	$objcclassname* ret = nil;
+	if(cPtr) {
+		ret = [[$objcclassname alloc] initWithCptr:cPtr swigOwnCObject:NO];
+	}
+	return ret; %}
  
 /* apply typemaps */
 // Treat references to arrays like like references to a single element.
@@ -611,19 +611,19 @@
                  unsigned int, 
                  unsigned long, 
                  unsigned short
-%{ char error_msg[256];
-   sprintf(error_msg, "C++ $1_type exception thrown, value: %d", $1);
-   SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, error_msg);
-   return $null; %}
+%{   char error_msg[256];
+	sprintf(error_msg, "C++ $1_type exception thrown, value: %d", $1);
+	SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, error_msg);
+	return $null; %}
  
 %typemap(throws) SWIGTYPE, SWIGTYPE &, SWIGTYPE *, SWIGTYPE [], SWIGTYPE [ANY]
-%{ (void)$1;
-   SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, "C++ $1_type exception thrown");
-   return $null; %}
+%{   (void)$1;
+	SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, "C++ $1_type exception thrown");
+	return $null; %}
 
 %typemap(throws) char *
-%{ SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, $1);
-   return $null; %}
+%{   SWIG_ObjcThrowException(SWIG_ObjcRuntimeException, $1);
+	return $null; %}
 
 
 #define %objcexception(exceptionclasses) %feature("except",throws=exceptionclasses)
